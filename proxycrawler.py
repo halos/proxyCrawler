@@ -1,6 +1,8 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
+import re
+import urrlib
 
 class proxyCrawler:
 	"""
@@ -31,3 +33,10 @@ class proxyCrawler:
 		
 		proxies = []
 		
+	def __get_num_pages(self):
+		
+		page = urllib.urlopen('http://www.samair.ru/proxy/proxy-01.htm').read()
+		
+		num_pages = int(re.findall(u'total pages: (\d+)', page)[0])
+		
+		return num_pages

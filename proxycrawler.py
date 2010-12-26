@@ -82,15 +82,24 @@ class proxyCrawler:
 		
 		pattern = u'(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}).*?["]([+'
 		
-		for i in self.__get_substitutions(page).keys():
+		substitutions = self.__get_substitutions(page)
+		
+		for i in substitutions.keys():
 			pattern += i
 		pattern += u']+)\)'
 		
-		proxies = re.findall(pattern, page)
+		raw_proxies = re.findall(pattern, page)
 		
+		parsed_proxies = []
 		#TODO: parse ports
+		for ip, port in raw_proxies:
+			port = port.replace('+', '')
+			for let in substitutions:
+				port = port.replace(let, substitutions[let])
 		
-		return proxies
+			parsed_proxies += (ip, port)
+		
+		return parsed_proxies
 	
 	def get_all_proxies(self):
 		"""
@@ -116,5 +125,5 @@ class proxyCrawler:
 
 if __name__ == "__main__":
 	p = proxyCrawler().get_all_proxies()
-	print len(p)
+	print p[:10]
 	

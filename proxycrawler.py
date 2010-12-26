@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 import re
-import urrlib
+import urllib
 
 class proxyCrawler:
 	"""
@@ -48,7 +48,7 @@ class proxyCrawler:
 		
 		return num_pages
 		
-	def __get_substitutions(self):
+	def __get_substitutions(self, page):
 		"""
 		Method to get the letters that substitute the numbers of the ports
 		
@@ -57,9 +57,7 @@ class proxyCrawler:
 					(str) is the number
 		
 		"""
-		
-		page = urllib.urlopen('http://www.samair.ru/proxy/proxy-01.htm').read()
-		
+
 		subs = {}
 		
 		for let, num in re.findall(u'(.)=(\d)', page):
@@ -67,3 +65,56 @@ class proxyCrawler:
 			subs[let] = num
 			
 		return subs
+	
+	def __parse_proxies(self, page):
+		""" Function doc
+	
+		Params:
+	
+			PARAM(): DESCRIPTION
+	
+		Return:
+	
+			(): DESCRIPTION
+		"""
+		
+		# u'(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}).*?["]([+rjhsynw]+)\)'
+		
+		pattern = u'(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}).*?["]([+'
+		
+		for i in self.__get_substitutions(page).keys():
+			pattern += i
+		pattern += u']+)\)'
+		
+		proxies = re.findall(pattern, page)
+		
+		#TODO: parse ports
+		
+		return proxies
+	
+	def get_all_proxies(self):
+		"""
+		Method to get all proxies
+	
+		Return:
+	
+			(list): List of all proxies in tuples 
+			(ip (str), port (int), type (str))
+		"""
+		
+		num_pages = self.__get_num_pages()
+		
+		proxies = []
+		
+		for i in xrange(1, num_pages+1):
+			url = 'http://www.samair.ru/proxy/proxy-' + str(i).zfill(2) + '.htm'
+			page = urllib.urlopen(url).read()
+			proxies += self.__parse_proxies(page)
+			
+		return proxies
+
+
+if __name__ == "__main__":
+	p = proxyCrawler().get_all_proxies()
+	print len(p)
+	

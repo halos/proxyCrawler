@@ -3,6 +3,8 @@
 
 import re
 import urllib
+import urllib2
+from time import time
 
 class proxyCrawler:
 	"""
@@ -16,7 +18,7 @@ class proxyCrawler:
 		Constructor
 		"""
 		
-		pass
+		self.timeout = 1 # secs
 		
 	def find(self, criteria):
 		"""
@@ -71,11 +73,11 @@ class proxyCrawler:
 	
 		Params:
 	
-			PARAM(): DESCRIPTION
+			page(str): Page to parse to get the proxies
 	
 		Return:
 	
-			(): DESCRIPTION
+			(tuple): (ip (str), port (str)) Proxy info
 		"""
 		
 		# u'(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}).*?["]([+rjhsynw]+)\)'
@@ -97,7 +99,7 @@ class proxyCrawler:
 			for let in substitutions:
 				port = port.replace(let, substitutions[let])
 		
-			parsed_proxies += (ip, port)
+			parsed_proxies.append((ip, port))
 		
 		return parsed_proxies
 	
@@ -108,7 +110,7 @@ class proxyCrawler:
 		Return:
 	
 			(list): List of all proxies in tuples 
-			(ip (str), port (int), type (str))
+			(ip (str), port (str), type (str))
 		"""
 		
 		num_pages = self.__get_num_pages()
@@ -121,9 +123,60 @@ class proxyCrawler:
 			proxies += self.__parse_proxies(page)
 			
 		return proxies
-
+				
+	def test_time(self, ip, port):
+		"""
+		Method to get the response time of a server
+	
+		Params:
+	
+			ip(str): Proxy IP
+			port(str): Proxy port
+	
+		Return:
+	
+			(float): response time
+		"""
+		
+		init_t = time()
+		
+		proxie_url =  'http://' + ip + ':' + port
+		
+		# set proxy
+		proxy_support = urllib2.ProxyHandler({'http': proxie_url})
+		opener = urllib2.build_opener(proxy_support)
+		urllib2.install_opener(opener)
+		
+		try:
+		
+			urllib2.urlopen("http://www.google.com", timeout=self.timeout)
+		
+			end_t = time()
+			
+			response_time = end_t - init_t
+			
+		except Exception, ex:
+			
+			response_time = 999
+			
+		finally:
+			
+			# use no proxy
+			proxy_support = urllib2.ProxyHandler({})
+			opener = urllib2.build_opener(proxy_support)
+			urllib2.install_opener(opener)
+			
+			return response_time
 
 if __name__ == "__main__":
-	p = proxyCrawler().get_all_proxies()
-	print p[:10]
+	pc = proxyCrawler()
+	p = pc.get_all_proxies()
+	#print p[:10]
 	
+	print len(p), "proxies"
+	
+	for ip, port in p:
+		
+		print "%s:%s %f" % (ip, port, pc.test_time(ip, port))
+		
+

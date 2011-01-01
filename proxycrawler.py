@@ -3,6 +3,8 @@
 
 import re
 import urllib
+import urllib2
+from time import time
 
 class proxyCrawler:
 	"""
@@ -16,7 +18,7 @@ class proxyCrawler:
 		Constructor
 		"""
 		
-		pass
+		self.timeout = 1 # secs
 		
 	def find(self, criteria):
 		"""
@@ -71,11 +73,11 @@ class proxyCrawler:
 	
 		Params:
 	
-			PARAM(): DESCRIPTION
+			page(str): Page to parse to get the proxies
 	
 		Return:
 	
-			(): DESCRIPTION
+			(tuple): (ip (str), port (str)) Proxy info
 		"""
 		
 		# u'(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}).*?["]([+rjhsynw]+)\).*?<td>(.*?)</td>'
@@ -101,7 +103,7 @@ class proxyCrawler:
 			for let in substitutions:
 				port = port.replace(let, substitutions[let])
 		
-			parsed_proxies += (ip, port, type)
+			parsed_proxies.append((ip, port, type))
 		
 		return parsed_proxies
 	
@@ -122,20 +124,25 @@ class proxyCrawler:
 		"""
 		
 		filtered = proxies[:]
+		aux = filtered[:]
 		
 		if port:
-			for i in filtered:
-				if i[2] != port:
+			for i in aux:
+				if i[1] != port:
 					filtered.remove(i)
 			
+		aux = filtered[:]	
+			
 		if type:
-			for i in filtered:
-				if type not in i[3]:
+			for i in aux:
+				if type not in i[2]:
 					filtered.remove(i)
 			
 		#if country:
 			
 			#pass
+			
+		return filtered
 			
 	def get_all_proxies(self):
 		"""
@@ -144,7 +151,7 @@ class proxyCrawler:
 		Return:
 	
 			(list): List of all proxies in tuples 
-			(ip (str), port (int), type (str))
+			(ip (str), port (str), type (str))
 		"""
 		
 		num_pages = self.__get_num_pages()
@@ -157,9 +164,56 @@ class proxyCrawler:
 			proxies += self.__parse_proxies(page)
 			
 		return proxies
-
+				
+	def test_time(self, ip, port):
+		"""
+		Method to get the response time of a server
+	
+		Params:
+	
+			ip(str): Proxy IP
+			port(str): Proxy port
+	
+		Return:
+	
+			(float): response time
+		"""
+		
+		init_t = time()
+		
+		proxie_url =  'http://' + ip + ':' + port
+		
+		# set proxy
+		proxy_support = urllib2.ProxyHandler({'http': proxie_url})
+		opener = urllib2.build_opener(proxy_support)
+		urllib2.install_opener(opener)
+		
+		try:
+		
+			urllib2.urlopen("http://www.google.com", timeout=self.timeout)
+		
+			end_t = time()
+			
+			response_time = end_t - init_t
+			
+		except Exception, ex:
+			
+			response_time = 999
+			
+		finally:
+			
+			# disable proxy
+			proxy_support = urllib2.ProxyHandler({})
+			opener = urllib2.build_opener(proxy_support)
+			urllib2.install_opener(opener)
+			
+			return response_time
 
 if __name__ == "__main__":
-	p = proxyCrawler().get_all_proxies()
-	print p[:10]
+	pc = proxyCrawler()
+	lp = pc.get_all_proxies()
 	
+	print len(lp), "proxies"
+	
+	for i in pc.filter_proxies(lp, port = '80', type = 'anony'):
+		print i

@@ -161,7 +161,7 @@ class proxyCrawler:
 			
 		finally:
 			
-			# use no proxy
+			# disable proxy
 			proxy_support = urllib2.ProxyHandler({})
 			opener = urllib2.build_opener(proxy_support)
 			urllib2.install_opener(opener)
@@ -177,6 +177,5 @@ if __name__ == "__main__":
 	
 	for ip, port in p:
 		
-		print "%s:%s %f" % (ip, port, pc.test_time(ip, port))
+		print "%s:%s %.3f" % (ip, port, pc.test_time(ip, port))
 		
-

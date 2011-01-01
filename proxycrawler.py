@@ -80,29 +80,70 @@ class proxyCrawler:
 			(tuple): (ip (str), port (str)) Proxy info
 		"""
 		
-		# u'(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}).*?["]([+rjhsynw]+)\)'
+		# u'(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}).*?["]([+rjhsynw]+)\).*?<td>(.*?)</td>'
 		
-		pattern = u'(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}).*?["]([+'
+		pattern = u'(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}).*?["]([+' # ip
 		
 		substitutions = self.__get_substitutions(page)
 		
+		# port
 		for i in substitutions.keys():
 			pattern += i
 		pattern += u']+)\)'
+		pattern += u'.*?<td>(.*?)</td>' # get proxy type
+		
+		# TODO: Get country
 		
 		raw_proxies = re.findall(pattern, page)
 		
 		parsed_proxies = []
 		#TODO: parse ports
-		for ip, port in raw_proxies:
+		for ip, port, type in raw_proxies:
 			port = port.replace('+', '')
 			for let in substitutions:
 				port = port.replace(let, substitutions[let])
 		
-			parsed_proxies.append((ip, port))
+			parsed_proxies.append((ip, port, type))
 		
 		return parsed_proxies
 	
+	# TODO: Filter by country
+	def filter_proxies(self, proxies, port = '', type = ''):
+		""" Function doc
+	
+		Params:
+	
+			proxies(list): List of proxies
+			port(str): port number to filter
+			type(str): Type of proxie (anonymous CoDeen high-anonymous 
+			transparent)
+	
+		Return:
+	
+			(list): List of proxies filtered by the given criteria
+		"""
+		
+		filtered = proxies[:]
+		aux = filtered[:]
+		
+		if port:
+			for i in aux:
+				if i[1] != port:
+					filtered.remove(i)
+			
+		aux = filtered[:]	
+			
+		if type:
+			for i in aux:
+				if type not in i[2]:
+					filtered.remove(i)
+			
+		#if country:
+			
+			#pass
+			
+		return filtered
+			
 	def get_all_proxies(self):
 		"""
 		Method to get all proxies
@@ -170,12 +211,9 @@ class proxyCrawler:
 
 if __name__ == "__main__":
 	pc = proxyCrawler()
-	p = pc.get_all_proxies()
-	#print p[:10]
+	lp = pc.get_all_proxies()
 	
-	print len(p), "proxies"
+	print len(lp), "proxies"
 	
-	for ip, port in p:
-		
-		print "%s:%s %.3f" % (ip, port, pc.test_time(ip, port))
-		
+	for i in pc.filter_proxies(lp, port = '80', type = 'anony'):
+		print i

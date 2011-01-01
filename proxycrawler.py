@@ -78,29 +78,65 @@ class proxyCrawler:
 			(): DESCRIPTION
 		"""
 		
-		# u'(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}).*?["]([+rjhsynw]+)\)'
+		# u'(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}).*?["]([+rjhsynw]+)\).*?<td>(.*?)</td>'
 		
-		pattern = u'(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}).*?["]([+'
+		pattern = u'(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}).*?["]([+' # ip
 		
 		substitutions = self.__get_substitutions(page)
 		
+		# port
 		for i in substitutions.keys():
 			pattern += i
 		pattern += u']+)\)'
+		pattern += u'.*?<td>(.*?)</td>' # get proxy type
+		
+		# TODO: Get country
 		
 		raw_proxies = re.findall(pattern, page)
 		
 		parsed_proxies = []
 		#TODO: parse ports
-		for ip, port in raw_proxies:
+		for ip, port, type in raw_proxies:
 			port = port.replace('+', '')
 			for let in substitutions:
 				port = port.replace(let, substitutions[let])
 		
-			parsed_proxies += (ip, port)
+			parsed_proxies += (ip, port, type)
 		
 		return parsed_proxies
 	
+	# TODO: Filter by country
+	def filter_proxies(self, proxies, port = '', type = ''):
+		""" Function doc
+	
+		Params:
+	
+			proxies(list): List of proxies
+			port(str): port number to filter
+			type(str): Type of proxie (anonymous CoDeen high-anonymous 
+			transparent)
+	
+		Return:
+	
+			(list): List of proxies filtered by the given criteria
+		"""
+		
+		filtered = proxies[:]
+		
+		if port:
+			for i in filtered:
+				if i[2] != port:
+					filtered.remove(i)
+			
+		if type:
+			for i in filtered:
+				if type not in i[3]:
+					filtered.remove(i)
+			
+		#if country:
+			
+			#pass
+			
 	def get_all_proxies(self):
 		"""
 		Method to get all proxies

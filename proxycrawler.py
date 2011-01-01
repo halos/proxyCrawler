@@ -179,8 +179,6 @@ class proxyCrawler:
 			(float): response time
 		"""
 		
-		init_t = time()
-		
 		proxie_url =  'http://' + ip + ':' + port
 		
 		# set proxy
@@ -189,6 +187,8 @@ class proxyCrawler:
 		urllib2.install_opener(opener)
 		
 		try:
+		
+			init_t = time()
 		
 			urllib2.urlopen("http://www.google.com", timeout=self.timeout)
 		

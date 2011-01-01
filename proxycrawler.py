@@ -11,7 +11,7 @@ class proxyCrawler:
 	Class to find proxies
 	"""
 	
-	__proxies = []
+	proxies = []
 	
 	def __init__(self):
 		"""
@@ -19,6 +19,8 @@ class proxyCrawler:
 		"""
 		
 		self.timeout = 1 # secs
+		
+		self.__get_all_proxies()
 		
 	def find(self, criteria):
 		"""
@@ -107,9 +109,38 @@ class proxyCrawler:
 		
 		return parsed_proxies
 	
+	def get_faster(self, port = '', type = 'anonymous'):
+		"""
+		Method to get the faster proxie with the given criteria
+	
+		Params:
+	
+			port(str): Proxy port
+			type(str): Type of proxy
+	
+		Return:
+	
+			(tuple): (ip(str), port(str), type(str))
+		"""
+		
+		faster = None
+		faster_t = 1000
+		
+		filtered = self.get_proxies(port=port, type=type)
+		
+		for p in filtered:
+			proxy_t = self.test_time(p[0], p[1])
+			if proxy_t < faster_t:
+				faster_t = proxy_t
+				faster = p
+				print "A faster proxie found: ", p , "( %.3f seconds )" % (faster_t)
+				
+		return faster
+	
 	# TODO: Filter by country
-	def filter_proxies(self, proxies, port = '', type = ''):
-		""" Function doc
+	def get_proxies(self, port = '', type = 'anonymous'):
+		"""
+		Method to obtain a list of proxies with the given criteria
 	
 		Params:
 	
@@ -123,7 +154,7 @@ class proxyCrawler:
 			(list): List of proxies filtered by the given criteria
 		"""
 		
-		filtered = proxies[:]
+		filtered = self.proxies[:]
 		aux = filtered[:]
 		
 		if port:
@@ -144,7 +175,7 @@ class proxyCrawler:
 			
 		return filtered
 			
-	def get_all_proxies(self):
+	def __get_all_proxies(self):
 		"""
 		Method to get all proxies
 	
@@ -163,7 +194,7 @@ class proxyCrawler:
 			page = urllib.urlopen(url).read()
 			proxies += self.__parse_proxies(page)
 			
-		return proxies
+		self.proxies = proxies
 				
 	def test_time(self, ip, port):
 		"""
@@ -210,10 +241,15 @@ class proxyCrawler:
 			return response_time
 
 if __name__ == "__main__":
+	
+	print "Fetching proxies... "
 	pc = proxyCrawler()
-	lp = pc.get_all_proxies()
+	print "DONE"
 	
-	print len(lp), "proxies"
+	print len(pc.proxies), "proxies fetched"
 	
-	for i in pc.filter_proxies(lp, port = '80', type = 'anony'):
-		print i
+	print "Getting faster proxie... "
+	p = pc.get_faster(port = '80')
+	print "DONE"
+	
+	

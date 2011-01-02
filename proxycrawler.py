@@ -6,6 +6,25 @@ import urllib
 import urllib2
 from time import time
 
+class proxy:
+	
+	ip = ''
+	port = ''
+	type = ''
+	url = ''
+	response_time = 1000
+	
+	def __init__(self, ip, port, type):
+		
+		self.ip = ip
+		self.port = port
+		self.type = type
+		self.url = "http://%s:%s" % (self.ip, self.port)
+		
+	def __str__(self):
+		
+		return "http://%s:%s (%s)" % (self.ip, self.port, self.type)
+
 class proxyCrawler:
 	"""
 	Class to find proxies
@@ -21,21 +40,6 @@ class proxyCrawler:
 		self.timeout = 1 # secs
 		
 		self.__get_all_proxies()
-		
-	def find(self, criteria):
-		"""
-		Methot Function doc
-	
-		Params:
-	
-			criteria(dict): Criteria for searching proxies
-	
-		Return:
-	
-			(list): Proxies list matching given criteria
-		"""
-		
-		proxies = []
 		
 	def __get_num_pages(self):
 		"""
@@ -92,26 +96,26 @@ class proxyCrawler:
 		for i in substitutions.keys():
 			pattern += i
 		pattern += u']+)\)'
-		pattern += u'.*?<td>(.*?)</td>' # get proxy type
+		pattern += u'.*?<td>(.*?)</td>' # type
 		
 		# TODO: Get country
 		
 		raw_proxies = re.findall(pattern, page)
 		
 		parsed_proxies = []
-		#TODO: parse ports
+		
 		for ip, port, type in raw_proxies:
 			port = port.replace('+', '')
 			for let in substitutions:
 				port = port.replace(let, substitutions[let])
 		
-			parsed_proxies.append((ip, port, type))
+			parsed_proxies.append(proxy(ip, port, type))
 		
 		return parsed_proxies
 	
 	def get_faster(self, port = '', type = 'anonymous'):
 		"""
-		Method to get the faster proxie with the given criteria
+		Method to get the (maybe) faster proxie with the given criteria
 	
 		Params:
 	
@@ -129,11 +133,11 @@ class proxyCrawler:
 		filtered = self.get_proxies(port=port, type=type)
 		
 		for p in filtered:
-			proxy_t = self.test_time(p[0], p[1])
-			if proxy_t < faster_t:
-				faster_t = proxy_t
+			p.response_time = self.test_time(p)
+			if p.response_time < faster_t:
+				faster_t = p.response_time
 				faster = p
-				print "A faster proxie found: ", p , "( %.3f seconds )" % (faster_t)
+				print "A faster proxie found: ", p , "( %.3f seconds )" % (p.response_time)
 				
 		return faster
 	
@@ -158,16 +162,16 @@ class proxyCrawler:
 		aux = filtered[:]
 		
 		if port:
-			for i in aux:
-				if i[1] != port:
-					filtered.remove(i)
+			for p in aux:
+				if p.port != port:
+					filtered.remove(p)
 			
 		aux = filtered[:]	
 			
 		if type:
-			for i in aux:
-				if type not in i[2]:
-					filtered.remove(i)
+			for p in aux:
+				if type not in p.type:
+					filtered.remove(p)
 			
 		#if country:
 			
@@ -196,24 +200,21 @@ class proxyCrawler:
 			
 		self.proxies = proxies
 				
-	def test_time(self, ip, port):
+	def test_time(self, p):
 		"""
 		Method to get the response time of a server
 	
 		Params:
 	
-			ip(str): Proxy IP
-			port(str): Proxy port
+			p(proxy): Proxy
 	
 		Return:
 	
 			(float): response time
 		"""
 		
-		proxie_url =  'http://' + ip + ':' + port
-		
 		# set proxy
-		proxy_support = urllib2.ProxyHandler({'http': proxie_url})
+		proxy_support = urllib2.ProxyHandler({'http': p.url})
 		opener = urllib2.build_opener(proxy_support)
 		urllib2.install_opener(opener)
 		
@@ -225,11 +226,19 @@ class proxyCrawler:
 		
 			end_t = time()
 			
-			response_time = end_t - init_t
+			p.response_time = end_t - init_t
+		
+		# TODO: Terminate program
+		except KeyboardInterrupt:
 			
-		except Exception, ex:
+			print "Script terminated by user"
+			raise SystemExit
+		
+		except urllib2.URLError, ex:
 			
-			response_time = 999
+			if ex == "<urlopen error timed out>":
+				p.response_time = 999
+			p.response_time = 1000
 			
 		finally:
 			
@@ -237,8 +246,7 @@ class proxyCrawler:
 			proxy_support = urllib2.ProxyHandler({})
 			opener = urllib2.build_opener(proxy_support)
 			urllib2.install_opener(opener)
-			
-			return response_time
+			return p.response_time
 
 if __name__ == "__main__":
 	
@@ -248,7 +256,7 @@ if __name__ == "__main__":
 	
 	print len(pc.proxies), "proxies fetched"
 	
-	print "Getting faster proxie... "
+	print "Getting faster proxy... "
 	p = pc.get_faster(port = '80')
 	print "DONE"
 	

@@ -6,6 +6,8 @@ import urllib
 import urllib2
 from time import time
 
+from sys import argv
+
 class proxy:
 	
 	ip = ''
@@ -115,7 +117,7 @@ class proxyCrawler:
 	
 	def get_faster(self, port = '', type = 'anonymous'):
 		"""
-		Method to get the (maybe) faster proxie with the given criteria
+		Method to get the (maybe) faster proxy with the given criteria
 	
 		Params:
 	
@@ -137,7 +139,7 @@ class proxyCrawler:
 			if p.response_time < faster_t:
 				faster_t = p.response_time
 				faster = p
-				print "A faster proxie found: ", p , "( %.3f seconds )" % (p.response_time)
+				print "A faster proxy found: ", p , "( %.3f seconds )" % (p.response_time)
 				
 		return faster
 	
@@ -150,7 +152,7 @@ class proxyCrawler:
 	
 			proxies(list): List of proxies
 			port(str): port number to filter
-			type(str): Type of proxie (anonymous CoDeen high-anonymous 
+			type(str): Type of proxy (anonymous CoDeen high-anonymous 
 			transparent)
 	
 		Return:
@@ -257,7 +259,8 @@ if __name__ == "__main__":
 	print len(pc.proxies), "proxies fetched"
 	
 	print "Getting faster proxy... "
-	p = pc.get_faster(port = '80')
+	p = pc.get_faster()
+	
 	print "DONE"
 	
 	

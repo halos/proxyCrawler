@@ -6,24 +6,28 @@ import urllib
 import urllib2
 from time import time
 
+from sys import argv
+
 class proxy:
 	
 	ip = ''
 	port = ''
 	type = ''
+	country = ''
 	url = ''
 	response_time = 1000
 	
-	def __init__(self, ip, port, type):
+	def __init__(self, ip, port, type, country):
 		
 		self.ip = ip
 		self.port = port
 		self.type = type
+		self.country = country.lower()
 		self.url = "http://%s:%s" % (self.ip, self.port)
 		
 	def __str__(self):
 		
-		return "http://%s:%s (%s)" % (self.ip, self.port, self.type)
+		return "http://%s:%s (%s) located in '%s'" % (self.ip, self.port, self.type, self.country)
 
 class proxyCrawler:
 	"""
@@ -86,7 +90,7 @@ class proxyCrawler:
 			(tuple): (ip (str), port (str)) Proxy info
 		"""
 		
-		# u'(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}).*?["]([+rjhsynw]+)\).*?<td>(.*?)</td>'
+		# u'(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}).*?["]([+rjhsynw]+)\).*?<td>(.*?)</td><td>.*?</td><td>(.*?)</td>'
 		
 		pattern = u'(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}).*?["]([+' # ip
 		
@@ -98,51 +102,52 @@ class proxyCrawler:
 		pattern += u']+)\)'
 		pattern += u'.*?<td>(.*?)</td>' # type
 		
-		# TODO: Get country
+		# country
+		pattern += u'<td>.*?</td><td>(.*?)</td>'
 		
 		raw_proxies = re.findall(pattern, page)
 		
 		parsed_proxies = []
 		
-		for ip, port, type in raw_proxies:
+		for ip, port, type, country in raw_proxies:
 			port = port.replace('+', '')
-			for let in substitutions:
+			for let in substitutions: # create the port
 				port = port.replace(let, substitutions[let])
-		
-			parsed_proxies.append(proxy(ip, port, type))
+				
+			parsed_proxies.append(proxy(ip, port, type, country))
 		
 		return parsed_proxies
 	
-	def get_faster(self, port = '', type = 'anonymous'):
+	def get_faster(self, port = '', type = '', country = ''):
 		"""
-		Method to get the (maybe) faster proxie with the given criteria
+		Method to get the (maybe) faster proxy with the given criteria
 	
 		Params:
 	
 			port(str): Proxy port
 			type(str): Type of proxy
+			country(str): Country
 	
 		Return:
 	
-			(tuple): (ip(str), port(str), type(str))
+			(proxy): The fastest proxy detected
 		"""
 		
 		faster = None
 		faster_t = 1000
 		
-		filtered = self.get_proxies(port=port, type=type)
+		filtered = self.get_proxies(port=port, type=type, country=country)
 		
 		for p in filtered:
 			p.response_time = self.test_time(p)
 			if p.response_time < faster_t:
 				faster_t = p.response_time
 				faster = p
-				print "A faster proxie found: ", p , "( %.3f seconds )" % (p.response_time)
+				print "A faster proxy found: ", p , "( %.3f seconds )" % (p.response_time)
 				
 		return faster
 	
-	# TODO: Filter by country
-	def get_proxies(self, port = '', type = 'anonymous'):
+	def get_proxies(self, port = '', type = '', country = ''):
 		"""
 		Method to obtain a list of proxies with the given criteria
 	
@@ -150,8 +155,9 @@ class proxyCrawler:
 	
 			proxies(list): List of proxies
 			port(str): port number to filter
-			type(str): Type of proxie (anonymous CoDeen high-anonymous 
+			type(str): Type of proxy (anonymous CoDeen high-anonymous 
 			transparent)
+			country(str): Country where the proxy is located
 	
 		Return:
 	
@@ -166,16 +172,21 @@ class proxyCrawler:
 				if p.port != port:
 					filtered.remove(p)
 			
-		aux = filtered[:]	
+		aux = filtered[:]
 			
 		if type:
 			for p in aux:
 				if type not in p.type:
 					filtered.remove(p)
+		
+		aux = filtered[:]
 			
-		#if country:
+		if country:
+			country = country.lower()
+			for p in aux:
+				if country not in p.country:
+					filtered.remove(p)
 			
-			#pass
 			
 		return filtered
 			
@@ -256,8 +267,14 @@ if __name__ == "__main__":
 	
 	print len(pc.proxies), "proxies fetched"
 	
-	print "Getting faster proxy... "
-	p = pc.get_faster(port = '80')
+	#print "Getting faster proxy... "
+	#print "This may take a while..."
+	#p = pc.get_faster(type='anonymous, 'country='indonesia')
+	
+	print "Proxies from Indonesia"
+	for p in pc.get_proxies(country='indonesia'):
+		print p
+	
 	print "DONE"
 	
 	

@@ -221,7 +221,7 @@ class proxyCrawler:
 	
 		Return:
 	
-			(float): response time
+			(float): response time (seconds)
 		"""
 		
 		# set proxy
@@ -249,7 +249,9 @@ class proxyCrawler:
 			
 			if ex == "<urlopen error timed out>":
 				p.response_time = 999
-			p.response_time = 1000
+			else:
+				p.response_time = 1000
+				print "Unspected urllib2.URLError:", ex
 			
 		finally:
 			

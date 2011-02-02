@@ -4,8 +4,9 @@
 import re
 import urllib
 import urllib2
-from time import time
+import optparse
 
+from time import time
 from sys import argv
 
 class proxy:
@@ -15,7 +16,7 @@ class proxy:
 	type = ''
 	country = ''
 	url = ''
-	response_time = 1000
+	response_time = 1001
 	
 	def __init__(self, ip, port, type, country):
 		
@@ -27,7 +28,7 @@ class proxy:
 		
 	def __str__(self):
 		
-		return "http://%s:%s (%s) located in '%s'" % (self.ip, self.port, self.type, self.country)
+		return "http://%s:%s (%s) @ '%s'" % (self.ip, self.port, self.type, self.country)
 
 class proxyCrawler:
 	"""
@@ -36,12 +37,12 @@ class proxyCrawler:
 	
 	proxies = []
 	
+	time_out = 1 # seconds
+	
 	def __init__(self):
 		"""
 		Constructor
 		"""
-		
-		self.timeout = 1 # secs
 		
 		self.__get_all_proxies()
 		
@@ -118,9 +119,9 @@ class proxyCrawler:
 		
 		return parsed_proxies
 	
-	def get_faster(self, port = '', type = '', country = ''):
+	def get_fast(self, port = '', type = '', country = ''):
 		"""
-		Method to get the (maybe) faster proxy with the given criteria
+		Method to get the (maybe) fastest proxies with the given criteria
 	
 		Params:
 	
@@ -130,24 +131,21 @@ class proxyCrawler:
 	
 		Return:
 	
-			(proxy): The fastest proxy detected
+			(list(proxy)): The fastest proxies detected
 		"""
 		
-		faster = None
-		faster_t = 1000
+		faster = []
 		
 		filtered = self.get_proxies(port=port, type=type, country=country)
-		
 		for p in filtered:
 			p.response_time = self.test_time(p)
-			if p.response_time < faster_t:
-				faster_t = p.response_time
-				faster = p
-				print "A faster proxy found: ", p , "( %.3f seconds )" % (p.response_time)
+			if p.response_time < self.time_out:
+				faster.append(p)
+				print "Fast proxy found: ", p , "( %.3f s. )" % (p.response_time)
 				
 		return faster
 	
-	def get_proxies(self, port = '', type = '', country = ''):
+	def get_proxies(self, port = '', type = '', country = '', time_out = 0):
 		"""
 		Method to obtain a list of proxies with the given criteria
 	
@@ -158,6 +156,7 @@ class proxyCrawler:
 			type(str): Type of proxy (anonymous CoDeen high-anonymous 
 			transparent)
 			country(str): Country where the proxy is located
+			time_out(float): Maximum response time of proxies (in seconds)
 	
 		Return:
 	
@@ -186,7 +185,13 @@ class proxyCrawler:
 			for p in aux:
 				if country not in p.country:
 					filtered.remove(p)
-			
+		
+		aux = filtered[:]
+		
+		if time_out:
+			for p in aux:
+				if self.test_time(p) > time_out:
+					filtered.remove(p)
 			
 		return filtered
 			
@@ -221,7 +226,7 @@ class proxyCrawler:
 	
 		Return:
 	
-			(float): response time
+			(float): response time (seconds)
 		"""
 		
 		# set proxy
@@ -233,7 +238,7 @@ class proxyCrawler:
 		
 			init_t = time()
 		
-			urllib2.urlopen("http://www.google.com", timeout=self.timeout)
+			urllib2.urlopen("http://www.google.com", timeout=self.time_out)
 		
 			end_t = time()
 			
@@ -247,9 +252,11 @@ class proxyCrawler:
 		
 		except urllib2.URLError, ex:
 			
-			if ex == "<urlopen error timed out>":
-				p.response_time = 999
-			p.response_time = 1000
+			if str(ex) == "<urlopen error timed out>":
+				p.response_time = 999.9
+			else:
+				p.response_time = 1000.0
+				#print "Unexpected urllib2.URLError:", ex
 			
 		finally:
 			
@@ -261,19 +268,39 @@ class proxyCrawler:
 
 if __name__ == "__main__":
 	
+	parser = optparse.OptionParser()
+	parser.add_option('-c', '--country', help='proxies\' country')
+	parser.add_option('-p', '--port', help='proxies\' port')
+	parser.add_option('-t', '--type', help="proxies\' type ['anonymous', 'CoDeen', 'transparent']")
+	parser.add_option('--time_out', '--to', type="int", help='Maximun proxies response time')
+	parser.add_option("--fast", action="store_true", default=False, help='Check the fastest proxies')
+	
+	(options, args) = parser.parse_args(argv)
+	
+	country = options.country
+	port = options.port
+	type = options.type
+	fast = options.fast
+	time_out = options.time_out
+	
 	print "Fetching proxies... "
 	pc = proxyCrawler()
 	print "DONE"
 	
 	print len(pc.proxies), "proxies fetched"
 	
-	#print "Getting faster proxy... "
-	#print "This may take a while..."
-	#p = pc.get_faster(type='anonymous, 'country='indonesia')
+	if fast:
+		
+		if(time_out):
+			pc.time_out = time_out
+			
+		print "Getting fast proxies... (Response time < %d s.) " % pc.time_out
+		print "This may take a while..."
+		pc.get_fast(port=port, type=type, country=country)
 	
-	print "Proxies from Indonesia"
-	for p in pc.get_proxies(country='indonesia'):
-		print p
+	else:
+		for p in pc.get_proxies(port=port, type=type, country=country):
+			print p
 	
 	print "DONE"
 	

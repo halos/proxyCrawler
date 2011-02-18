@@ -238,11 +238,14 @@ class proxyCrawler:
 		
 			init_t = time()
 		
-			urllib2.urlopen("http://www.google.com", timeout=self.time_out)
+			page = urllib2.urlopen("http://www.google.es", timeout=self.time_out).read()
 		
 			end_t = time()
 			
-			p.response_time = end_t - init_t
+			if('google.com' in page):
+				p.response_time = end_t - init_t
+			else:
+				p.response_time = 1000.0
 		
 		# TODO: Terminate program
 		except KeyboardInterrupt:
@@ -299,7 +302,7 @@ if __name__ == "__main__":
 		pc.get_fast(port=port, type=type, country=country)
 	
 	else:
-		for p in pc.get_proxies(port=port, type=type, country=country):
+		for p in pc.get_proxies(port=port, type=type, country=country, time_out=time_out):
 			print p
 	
 	print "DONE"

@@ -1,1 +1,13 @@
 Python library to look for proxy servers
+
+Usage: proxycrawler.py [options]
+
+Options:
+  -h, --help            show this help message and exit
+  -c COUNTRY, --country=COUNTRY
+                        proxies' country
+  -p PORT, --port=PORT  proxies' port
+  -t TYPE, --type=TYPE  proxies' type ['anonymous', 'CoDeen', 'transparent']
+  --time_out=TIME_OUT, --to=TIME_OUT
+                        Maximun proxies response time
+  --fast                Check the fastest proxies

@@ -5,9 +5,13 @@ import re
 import urllib
 import urllib2
 import optparse
+import sys
 
 from time import time
-from sys import argv
+
+def print_stdout(line):
+	sys.stdout.write(line)
+	sys.stdout.flush()
 
 class proxy:
 	
@@ -137,12 +141,24 @@ class proxyCrawler:
 		faster = []
 		
 		filtered = self.get_proxies(port=port, type=type, country=country)
+		
+		total = len(filtered)
+		c = 0
+		
+		print_stdout("[0/%d]" % (total))
+		
 		for p in filtered:
 			p.response_time = self.test_time(p)
 			if p.response_time < self.time_out:
 				faster.append(p)
-				print "Fast proxy found: ", p , "( %.3f s. )" % (p.response_time)
-				
+				print_stdout("\rFast proxy found: %s ( %.3f s. )\n" % (p, p.response_time))
+			
+			c += 1
+			print_stdout("\r[%d/%d]" % (c, total))
+			
+			
+		print
+		
 		return faster
 	
 	def get_proxies(self, port = '', type = '', country = '', time_out = 0):
@@ -238,11 +254,14 @@ class proxyCrawler:
 		
 			init_t = time()
 		
-			urllib2.urlopen("http://www.google.com", timeout=self.time_out)
+			page = urllib2.urlopen("http://www.google.es", timeout=self.time_out).read()
 		
 			end_t = time()
 			
-			p.response_time = end_t - init_t
+			if('google.com' in page):
+				p.response_time = end_t - init_t
+			else:
+				p.response_time = 1000.0
 		
 		# TODO: Terminate program
 		except KeyboardInterrupt:
@@ -275,7 +294,7 @@ if __name__ == "__main__":
 	parser.add_option('--time_out', '--to', type="int", help='Maximun proxies response time')
 	parser.add_option("--fast", action="store_true", default=False, help='Check the fastest proxies')
 	
-	(options, args) = parser.parse_args(argv)
+	(options, args) = parser.parse_args(sys.argv)
 	
 	country = options.country
 	port = options.port
@@ -299,7 +318,7 @@ if __name__ == "__main__":
 		pc.get_fast(port=port, type=type, country=country)
 	
 	else:
-		for p in pc.get_proxies(port=port, type=type, country=country):
+		for p in pc.get_proxies(port=port, type=type, country=country, time_out=time_out):
 			print p
 	
 	print "DONE"
